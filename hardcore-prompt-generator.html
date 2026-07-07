@@ -1,0 +1,557 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hardcore Prompt Generator</title>
+<style>
+  :root{
+    --ground:#0a0a0b;
+    --panel:#141416;
+    --panel-2:#1b1b1e;
+    --edge:#2a2a2e;
+    --bone:#e9e5da;
+    --dim:#8b877c;
+    --kick:#ff2e1f;
+    --kick-deep:#8f1610;
+    --display:'Haettenschweiler','Arial Narrow Bold',Impact,'Franklin Gothic Medium',sans-serif;
+    --body:'Helvetica Neue',Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,'Cascadia Mono',Menlo,Consolas,'Liberation Mono',monospace;
+  }
+  html{color-scheme:dark}
+  body{
+    background:var(--ground);
+    color:var(--bone);
+    font-family:var(--body);
+    margin:0;
+    min-height:100vh;
+  }
+  .noise{
+    position:fixed;inset:0;pointer-events:none;opacity:.05;z-index:0;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+  .wrap{position:relative;z-index:1;max-width:880px;margin:0 auto;padding:0 20px 72px}
+
+  header{padding:44px 0 20px}
+  .eyebrow{
+    font-family:var(--body);font-size:11px;font-weight:700;
+    letter-spacing:.32em;text-transform:uppercase;color:var(--kick);
+    margin:0 0 10px;
+  }
+  h1{
+    font-family:var(--display);font-weight:400;text-transform:uppercase;
+    font-size:clamp(52px,10vw,96px);line-height:.9;letter-spacing:.01em;
+    margin:0;text-wrap:balance;
+  }
+  h1 .red{color:var(--kick)}
+  .sub{color:var(--dim);font-size:14px;line-height:1.5;max-width:56ch;margin:14px 0 0}
+  .hazard{
+    height:10px;margin-top:22px;
+    background:repeating-linear-gradient(-45deg,var(--kick) 0 12px,var(--ground) 12px 24px);
+  }
+
+  .rack{
+    background:var(--panel);border:1px solid var(--edge);
+    margin-top:28px;padding:22px;
+    display:grid;grid-template-columns:1fr 1fr;gap:20px 24px;
+  }
+  @media (max-width:640px){.rack{grid-template-columns:1fr}}
+  .field{display:flex;flex-direction:column;gap:8px}
+  .field label{
+    font-size:11px;font-weight:700;letter-spacing:.24em;
+    text-transform:uppercase;color:var(--dim);
+  }
+  select{
+    background:var(--panel-2);color:var(--bone);border:1px solid var(--edge);
+    font-family:var(--body);font-size:15px;padding:10px 12px;width:100%;
+  }
+  select:focus-visible,button:focus-visible,input:focus-visible{
+    outline:2px solid var(--kick);outline-offset:2px;
+  }
+
+  .bpm-field{grid-column:1/-1;display:grid;grid-template-columns:1fr auto;gap:6px 20px;align-items:end}
+  .bpm-field label{grid-column:1/-1}
+  .bpm-readout{
+    font-family:var(--display);font-size:56px;line-height:.9;
+    color:var(--kick);font-variant-numeric:tabular-nums;
+    min-width:3.2ch;text-align:right;
+  }
+  .bpm-readout small{font-size:18px;color:var(--dim);letter-spacing:.1em}
+  input[type=range]{
+    -webkit-appearance:none;appearance:none;width:100%;height:26px;
+    background:transparent;margin:0;
+  }
+  input[type=range]::-webkit-slider-runnable-track{height:4px;background:var(--edge)}
+  input[type=range]::-moz-range-track{height:4px;background:var(--edge)}
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none;appearance:none;width:22px;height:22px;border-radius:0;
+    background:var(--kick);border:none;margin-top:-9px;cursor:pointer;
+  }
+  input[type=range]::-moz-range-thumb{
+    width:22px;height:22px;border-radius:0;background:var(--kick);border:none;cursor:pointer;
+  }
+
+  .generate{
+    grid-column:1/-1;
+    font-family:var(--display);font-weight:400;text-transform:uppercase;
+    font-size:34px;letter-spacing:.06em;
+    background:var(--kick);color:#0a0a0b;border:none;
+    padding:16px 20px;cursor:pointer;
+    transition:transform .06s ease,background .12s ease;
+  }
+  .generate:hover{background:#ff4a3c}
+  .generate:active{transform:scale(.97)}
+
+  .out{margin-top:34px;display:none;flex-direction:column;gap:26px}
+  .out.show{display:flex}
+  .track-title{
+    font-family:var(--display);text-transform:uppercase;font-weight:400;
+    font-size:clamp(30px,5.4vw,44px);line-height:.95;margin:0;
+  }
+  .track-meta{color:var(--dim);font-size:12px;letter-spacing:.2em;text-transform:uppercase;margin:6px 0 0}
+
+  .block{background:var(--panel);border:1px solid var(--edge)}
+  .block-head{
+    display:flex;justify-content:space-between;align-items:center;gap:12px;
+    padding:12px 16px;border-bottom:1px solid var(--edge);
+  }
+  .block-head h2{
+    font-size:11px;font-weight:700;letter-spacing:.24em;
+    text-transform:uppercase;color:var(--dim);margin:0;
+  }
+  .copy{
+    font-family:var(--body);font-size:11px;font-weight:700;
+    letter-spacing:.18em;text-transform:uppercase;
+    background:transparent;color:var(--kick);
+    border:1px solid var(--kick-deep);padding:7px 14px;cursor:pointer;
+    transition:background .12s ease,color .12s ease;
+  }
+  .copy:hover{background:var(--kick);color:#0a0a0b}
+  .copy.done{background:var(--kick);color:#0a0a0b}
+  .block pre{
+    margin:0;padding:18px;font-family:var(--mono);font-size:13.5px;
+    line-height:1.65;white-space:pre-wrap;overflow-x:auto;color:var(--bone);
+  }
+  .flash{animation:slam .28s ease}
+  @keyframes slam{
+    0%{transform:translateY(-4px);opacity:0}
+    60%{transform:translateY(1px);opacity:1}
+    100%{transform:translateY(0)}
+  }
+  @media (prefers-reduced-motion:reduce){
+    .flash{animation:none}
+    .generate,.copy{transition:none}
+    .generate:active{transform:none}
+  }
+
+  .howto{
+    margin-top:40px;color:var(--dim);font-size:13px;line-height:1.7;
+    border-top:1px solid var(--edge);padding-top:18px;max-width:64ch;
+  }
+  .howto strong{color:var(--bone);font-weight:700}
+</style>
+</head>
+<body>
+
+<div class="noise" aria-hidden="true"></div>
+<div class="wrap">
+  <header>
+    <p class="eyebrow">Suno-ready · 150–300 BPM</p>
+    <h1>Hardcore <span class="red">Prompt</span> Generator</h1>
+    <p class="sub">Stomping uptempo, gabber, frenchcore and industrial tracks on demand: one style line for the style field, full structured lyrics for the lyrics field. Hit generate, copy, paste, destroy.</p>
+    <div class="hazard" aria-hidden="true"></div>
+  </header>
+
+  <section class="rack" aria-label="Track controls">
+    <div class="field">
+      <label for="theme">Theme</label>
+      <select id="theme"></select>
+    </div>
+    <div class="field">
+      <label for="subgenre">Subgenre</label>
+      <select id="subgenre"></select>
+    </div>
+    <div class="field">
+      <label for="vocals">Vocals</label>
+      <select id="vocals">
+        <option value="random">Random</option>
+        <option value="">None / instrumental tags only</option>
+        <option value="shouted vocals">Shouted vocals</option>
+        <option value="distorted vocal chops">Distorted vocal chops</option>
+        <option value="megaphone vocals">Megaphone vocals</option>
+        <option value="pitched-down chants">Pitched-down chants</option>
+        <option value="screamed vocals">Screamed vocals</option>
+      </select>
+    </div>
+    <div class="field bpm-field">
+      <label for="bpm">Tempo</label>
+      <input type="range" id="bpm" min="150" max="300" step="5" value="220">
+      <div class="bpm-readout"><span id="bpmVal">220</span><small> BPM</small></div>
+    </div>
+    <button class="generate" id="go" type="button">Generate track</button>
+  </section>
+
+  <section class="out" id="out" aria-live="polite">
+    <div>
+      <h2 class="track-title" id="trackTitle"></h2>
+      <p class="track-meta" id="trackMeta"></p>
+    </div>
+    <div class="block">
+      <div class="block-head">
+        <h2>Style line — paste into Suno's style field</h2>
+        <button class="copy" type="button" data-copy="styleOut">Copy</button>
+      </div>
+      <pre id="styleOut"></pre>
+    </div>
+    <div class="block">
+      <div class="block-head">
+        <h2>Lyrics — paste into Suno's lyrics field (custom mode)</h2>
+        <button class="copy" type="button" data-copy="lyricsOut">Copy</button>
+      </div>
+      <pre id="lyricsOut"></pre>
+    </div>
+  </section>
+
+  <footer class="howto">
+    <strong>How to use with Suno:</strong> switch to Custom mode, paste the style line into the <strong>Style of Music</strong> field and the lyrics block into the <strong>Lyrics</strong> field. The section tags ([Verse], [Chorus], [Bridge – industrial breakdown]…) steer the arrangement; ALL-CAPS lines get shouted. Re-generate as many times as it takes — the kick is always right.
+  </footer>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  var SUBGENRES = [
+    {name:"Uptempo Hardcore", bpm:220, tags:["hard techno","industrial","hardcore","Uptempo Hardcore"]},
+    {name:"Early Hardcore / Gabber", bpm:180, tags:["gabber","early hardcore","rave","hoover stabs"]},
+    {name:"Industrial Hardcore", bpm:160, tags:["industrial hardcore","hard techno","dark","mechanical"]},
+    {name:"Frenchcore", bpm:200, tags:["frenchcore","hardcore","bouncing kick","rave"]},
+    {name:"Terrorcore", bpm:240, tags:["terrorcore","extreme hardcore","distortion","dark"]},
+    {name:"Speedcore", bpm:300, tags:["speedcore","extratone","extreme hardcore","noise"]},
+    {name:"Crossbreed", bpm:175, tags:["crossbreed","hardcore drum and bass","industrial","dark"]},
+    {name:"Rawstyle", bpm:155, tags:["rawstyle","hardstyle","screeches","anthemic"]}
+  ];
+
+  var TEXTURES = ["industrial noise","screeching hoovers","metallic percussion","air-raid sirens","acid stabs","reversed bass","factory ambience","pitch-black pads","alarm synths","gated screams"];
+  var KICKS = ["crushing kick","distorted 909 kick","punishing kick","overdriven kick","bouncing kick"];
+  var BRIDGE_DESC = ["industrial breakdown","half-time stomp","kick-roll build","distorted breakdown","noise wall"];
+  var OUTRO_DESC = ["distorted industrial fade","kick decay into noise","sirens fade to silence","tape-stop collapse"];
+
+  var THEMES = [
+    {
+      name:"The Machine (rigged system)",
+      hook:"THE MACHINE GRINDS", chant:"GRIND",
+      outro:"THE MACHINE... GRINDS...",
+      couplets:[
+        ["The machine grinds, it never sleeps","Buries truth beneath concrete"],
+        ["Paper trail leads nowhere fast","Broken law designed to last"],
+        ["Rubber stamps on empty pleas","Corruption runs with expertise"],
+        ["Every order, every seal","Just another rotten deal"],
+        ["Decades pass, the cogs keep turning","Cities sleep while justice burns"],
+        ["Filed away and marked as read","Signed in ink but left for dead"],
+        ["Cameras watch the empty halls","Verdicts written on the walls"],
+        ["Iron doors and marble floors","Justice sleeps behind closed doors"],
+        ["No appeal, no voice, no choice","Drowned beneath the system's noise"]
+      ],
+      preChorus:[
+        ["Hear the gears turn","Watch the documents burn","Nothing's earned","When the system's rigged"],
+        ["Feel the floor shake","Watch the pillars break","Too much at stake","When the system's rigged"]
+      ],
+      tails:[
+        ["You can't fight what you can't see","Until there's nothing left to be"],
+        ["A million cogs, a single scheme","It eats the future, sells the dream"]
+      ],
+      bridgePairs:[
+        ["They bury us in paperwork","They make justice sound absurd"],
+        ["They feed on every silent mouth","They grind the truth to dust and doubt"]
+      ],
+      closers:[
+        ["But we're still here","We're still heard"],
+        ["But we won't kneel","We're still real"]
+      ]
+    },
+    {
+      name:"Burn It Down (uprising)",
+      hook:"BURN IT DOWN", chant:"BURN",
+      outro:"BURN... IT... DOWN...",
+      couplets:[
+        ["Torches rising in the square","Smoke and fury fill the air"],
+        ["Barricades of broken glass","This regime was built to crash"],
+        ["Every wall they put between","Fuel to feed the gasoline"],
+        ["Sirens howl but no one runs","We outnumber all their guns"],
+        ["Painted warnings on the gate","They taught us nothing else but hate"],
+        ["Crowns will melt and thrones will bend","Every empire meets its end"],
+        ["Whispers turned to battle cries","Truth comes cutting through the lies"],
+        ["Concrete cracks beneath our feet","Revolution fills the street"]
+      ],
+      preChorus:[
+        ["Strike the match now","Hear the crowd howl","No way back now","The fire is ours"],
+        ["One spark is all","To watch them fall","They built the wall","We bring it down"]
+      ],
+      tails:[
+        ["Ash and ember, no retreat","History burns beneath our feet"],
+        ["Every ruin tells the truth","Nothing's louder than the youth"]
+      ],
+      bridgePairs:[
+        ["They stole the bread, they stole the years","They built their towers on our fears"],
+        ["They wrote the rules to keep us small","They never thought we'd light it all"]
+      ],
+      closers:[
+        ["But we're the flame","They can't put out"],
+        ["And from the ash","We rise again"]
+      ]
+    },
+    {
+      name:"The Floor Is War (warehouse rave)",
+      hook:"THE FLOOR IS WAR", chant:"STOMP",
+      outro:"THE FLOOR... IS WAR...",
+      couplets:[
+        ["Strobe light cutting through the smoke","Bassline heavy, ceiling broke"],
+        ["Ten thousand boots hit like a quake","Concrete floors begin to break"],
+        ["Sweat is dripping from the steel","This is madness you can feel"],
+        ["No tomorrow, no goodbye","Just the kick and strobe-lit sky"],
+        ["Speakers stacked up to the roof","Every drop another proof"],
+        ["Gasmasks, hoods and steel-toe boots","The underground has deeper roots"],
+        ["Pressure building in the red","This sound system wakes the dead"],
+        ["Locked inside the bunker walls","Nobody sleeps when the hammer falls"]
+      ],
+      preChorus:[
+        ["Hands in the air","Smoke in the lungs","War on the floor","Speaking in tongues"],
+        ["Feel the kick hit","Straight through the chest","No time to rest","The floor knows best"]
+      ],
+      tails:[
+        ["Two-twenty and we want more","That's what the kick drum's for"],
+        ["Surrender to the low-end law","The hardest sound you ever saw"]
+      ],
+      bridgePairs:[
+        ["The kick is law, the bass is judge","Ten thousand strong and we won't budge"],
+        ["No bottle service, no VIP","Just concrete, smoke and BPM"]
+      ],
+      closers:[
+        ["We hold the line","Until the dawn"],
+        ["The night is ours","The war goes on"]
+      ]
+    },
+    {
+      name:"System Overload (digital dystopia)",
+      hook:"SYSTEM OVERLOAD", chant:"CRASH",
+      outro:"SYSTEM... OVERLOAD...",
+      couplets:[
+        ["Every step is logged and sold","Freedom traded, bought for gold"],
+        ["Cameras blink on every street","Algorithms judge the meat"],
+        ["Screens are glowing, eyes are dead","Feeding lies inside your head"],
+        ["Data centers hum like hives","Harvesting a million lives"],
+        ["Your reflection is a feed","Programmed hunger, programmed need"],
+        ["Firewalls around your mind","Terms agreed and rights resigned"],
+        ["Ghost accounts and hollow friends","Scroll until the signal ends"],
+        ["Pull the plug and watch it bleed","Static is the final creed"]
+      ],
+      preChorus:[
+        ["Signal breaking","Towers shaking","No mistaking","The grid goes down"],
+        ["Circuits frying","Servers dying","No denying","The grid goes down"]
+      ],
+      tails:[
+        ["Error message in your soul","The network ate your self-control"],
+        ["Ctrl, Alt, Delete the lie","Watch the mainframe say goodbye"]
+      ],
+      bridgePairs:[
+        ["They wrote the code that writes your fate","They monetize the things you hate"],
+        ["They trained the ghost inside the wire","They sold the smoke, we bring the fire"]
+      ],
+      closers:[
+        ["Pull every plug","Burn every node"],
+        ["But we log out","And we scream loud"]
+      ]
+    },
+    {
+      name:"It Never Stops (inner rage)",
+      hook:"IT NEVER STOPS", chant:"RAGE",
+      outro:"IT NEVER... STOPS...",
+      couplets:[
+        ["Something's clawing at my chest","Never lets me sleep or rest"],
+        ["Voices louder every night","Shadowboxing with the light"],
+        ["Grinding teeth and clenching fists","Anger writes its endless lists"],
+        ["Pressure like a broken dam","Nobody knows who I am"],
+        ["Mirror shows a stranger's stare","Smashing it won't take me there"],
+        ["Swallowed words turn into stone","Carry them and walk alone"],
+        ["Every scar a silent scream","Waking from the same bad dream"],
+        ["Let it out or let it win","Tear the quiet from within"]
+      ],
+      preChorus:[
+        ["It keeps climbing","There's no hiding","Blood is pounding","Let it in"],
+        ["Feel it rising","No disguising","Detonating","Let it out"]
+      ],
+      tails:[
+        ["A hurricane behind my eyes","Too loud to ever compromise"],
+        ["I feed the beast so I survive","The rage is proof that I'm alive"]
+      ],
+      bridgePairs:[
+        ["They said calm down, they said behave","They dug the hole, they built the grave"],
+        ["They want it quiet, want it clean","They never heard a kick this mean"]
+      ],
+      closers:[
+        ["But I'm still here","And I'm not done"],
+        ["I turned the pain","Into the drum"]
+      ]
+    },
+    {
+      name:"No Brakes (pure velocity)",
+      hook:"NO BRAKES", chant:"FAST",
+      outro:"NO... BRAKES...",
+      couplets:[
+        ["Redline screaming past the dial","Been flat out for a hundred miles"],
+        ["Tunnel vision, streetlights bend","This velocity won't end"],
+        ["Three hundred on a broken clock","Momentum doesn't ever stop"],
+        ["Fuel is fear and fear is fast","Every second is the last"],
+        ["Rubber burning, engines roar","The pedal's welded to the floor"],
+        ["Sound barrier begins to crack","No rearview, never look back"],
+        ["Heartbeat syncing with the pace","G-force pulling at my face"],
+        ["Gravity gave up the chase","We left physics in disgrace"]
+      ],
+      preChorus:[
+        ["Foot down, hold tight","White lines, no light","Full speed, all night","We never slow"],
+        ["Shift up, red zone","Flat out, unknown","Too far from home","We never slow"]
+      ],
+      tails:[
+        ["The speedometer just died","Hold on tight, enjoy the ride"],
+        ["Velocity is my religion","Slowing down was never the mission"]
+      ],
+      bridgePairs:[
+        ["They post the limits, we post times","Staying slow's the only crime"],
+        ["They built the roads, we built the need","They pray for rain, we pray for speed"]
+      ],
+      closers:[
+        ["Full throttle","No mercy"],
+        ["No finish line","No brakes"]
+      ]
+    }
+  ];
+
+  function pick(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
+  function sample(arr,n){
+    var copy = arr.slice(), out = [];
+    while(out.length < n && copy.length){
+      out.push(copy.splice(Math.floor(Math.random()*copy.length),1)[0]);
+    }
+    return out;
+  }
+  function titleCase(s){
+    return s.toLowerCase().replace(/(^|[\s(])\w/g, function(c){ return c.toUpperCase(); });
+  }
+
+  var themeSel = document.getElementById("theme");
+  var subSel = document.getElementById("subgenre");
+  var vocalSel = document.getElementById("vocals");
+  var bpmInput = document.getElementById("bpm");
+  var bpmVal = document.getElementById("bpmVal");
+
+  var opt = document.createElement("option");
+  opt.value = "random"; opt.textContent = "Random";
+  themeSel.appendChild(opt);
+  THEMES.forEach(function(t,i){
+    var o = document.createElement("option");
+    o.value = String(i); o.textContent = t.name;
+    themeSel.appendChild(o);
+  });
+  SUBGENRES.forEach(function(s,i){
+    var o = document.createElement("option");
+    o.value = String(i); o.textContent = s.name + " · ~" + s.bpm + " BPM";
+    subSel.appendChild(o);
+  });
+
+  subSel.addEventListener("change", function(){
+    var s = SUBGENRES[Number(subSel.value)];
+    bpmInput.value = String(Math.min(300, Math.max(150, s.bpm)));
+    bpmVal.textContent = bpmInput.value;
+  });
+  bpmInput.addEventListener("input", function(){ bpmVal.textContent = bpmInput.value; });
+
+  function buildStyleLine(sub, bpm, vocal){
+    var tags = sub.tags.slice();
+    if(vocal){ tags.push(vocal); }
+    var texture = pick(TEXTURES);
+    var kick = pick(KICKS);
+    return "[" + tags.join(", ") + ", " + bpm + "bpm Intro - " + texture + ", " + kick + "]";
+  }
+
+  function buildLyrics(theme){
+    var couplets = sample(theme.couplets, 6);
+    var verse1 = couplets.slice(0,3);
+    var verse2 = couplets.slice(3,6);
+    var pre = pick(theme.preChorus);
+    var tail = pick(theme.tails);
+    var bridgePair = pick(theme.bridgePairs);
+    var closer = pick(theme.closers);
+    var chantLine = theme.chant + " — " + theme.chant + " — " + theme.chant;
+
+    function verse(lines){ return lines.map(function(c){ return c[0] + "\n" + c[1]; }).join("\n"); }
+    var chorus = [theme.hook, theme.hook, tail[0], theme.hook, theme.hook, tail[1]].join("\n");
+
+    return [
+      "[Verse 1]\n" + verse(verse1),
+      "[Pre-Chorus]\n" + pre.join("\n"),
+      "[Chorus]\n" + chorus,
+      "[Verse 2]\n" + verse(verse2),
+      "[Pre-Chorus]\n" + pre.join("\n"),
+      "[Chorus]\n" + chorus,
+      "[Bridge - " + pick(BRIDGE_DESC) + "]\n" +
+        chantLine + "\n" + bridgePair[0] + "\n" +
+        chantLine + "\n" + bridgePair[1] + "\n" +
+        chantLine + "\n" + closer[0] + "\n" + closer[1],
+      "[Outro - " + pick(OUTRO_DESC) + "]\n" + theme.outro
+    ].join("\n\n");
+  }
+
+  var out = document.getElementById("out");
+  var styleOut = document.getElementById("styleOut");
+  var lyricsOut = document.getElementById("lyricsOut");
+  var trackTitle = document.getElementById("trackTitle");
+  var trackMeta = document.getElementById("trackMeta");
+
+  document.getElementById("go").addEventListener("click", function(){
+    var theme = themeSel.value === "random" ? pick(THEMES) : THEMES[Number(themeSel.value)];
+    var sub = SUBGENRES[Number(subSel.value)];
+    var bpm = Number(bpmInput.value);
+    var vocal = vocalSel.value === "random"
+      ? pick(["shouted vocals","distorted vocal chops","megaphone vocals","pitched-down chants","screamed vocals",""])
+      : vocalSel.value;
+
+    trackTitle.textContent = theme.hook;
+    trackMeta.textContent = titleCase(theme.name.replace(/\s*\(.*\)$/,"")) + " · " + sub.name + " · " + bpm + " BPM";
+    styleOut.textContent = buildStyleLine(sub, bpm, vocal);
+    lyricsOut.textContent = buildLyrics(theme);
+
+    out.classList.add("show");
+    out.classList.remove("flash");
+    void out.offsetWidth;
+    out.classList.add("flash");
+  });
+
+  function copyText(text, btn){
+    function done(){
+      btn.classList.add("done");
+      btn.textContent = "Copied";
+      setTimeout(function(){ btn.classList.remove("done"); btn.textContent = "Copy"; }, 1200);
+    }
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text).then(done, function(){ fallback(); });
+    } else { fallback(); }
+    function fallback(){
+      var ta = document.createElement("textarea");
+      ta.value = text;
+      ta.style.position = "fixed"; ta.style.opacity = "0";
+      document.body.appendChild(ta);
+      ta.select();
+      try { document.execCommand("copy"); done(); } catch(e){}
+      document.body.removeChild(ta);
+    }
+  }
+  Array.prototype.forEach.call(document.querySelectorAll(".copy"), function(btn){
+    btn.addEventListener("click", function(){
+      copyText(document.getElementById(btn.getAttribute("data-copy")).textContent, btn);
+    });
+  });
+})();
+</script>
+</body>
+</html>
