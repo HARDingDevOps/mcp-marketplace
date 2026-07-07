@@ -156,7 +156,7 @@
 <div class="noise" aria-hidden="true"></div>
 <div class="wrap">
   <header>
-    <p class="eyebrow">Suno-ready · Impact design · 150–300 BPM</p>
+    <p class="eyebrow">Suno-ready · Impact design · 140–300 BPM</p>
     <h1>Hardcore <span class="red">Prompt</span> Generator</h1>
     <p class="sub">Kick first, everything else second. Generates a weapons-grade style prompt plus fully arranged lyrics — pre-drop silence, gang-shout drops, chant bridges, and a final drop that's the shortest and hardest section. Copy, paste into Suno, destroy.</p>
     <div class="hazard" aria-hidden="true"></div>
@@ -170,7 +170,8 @@
     <div class="field">
       <label for="mode">Track mode</label>
       <select id="mode">
-        <option value="tight">Club-ready — tight (recommended)</option>
+        <option value="weapon">DJ weapon — hard techno / schranz, slogan vocals</option>
+        <option value="tight">Club-ready — tight song structure</option>
         <option value="anthem">Full anthem — detailed production cues</option>
         <option value="groove">Machine groove — hard techno / EBM</option>
       </select>
@@ -183,6 +184,7 @@
       <label for="vocals">Main shout</label>
       <select id="vocals">
         <option value="random">Random</option>
+        <option value="aggressive spoken and shouted male vocal chops">Spoken + shouted vocal chops</option>
         <option value="aggressive shouted male vocals">Aggressive shouted male vocals</option>
         <option value="distorted vocal chops">Distorted vocal chops</option>
         <option value="megaphone vocals">Megaphone vocals</option>
@@ -192,8 +194,8 @@
     </div>
     <div class="field bpm-field">
       <label for="bpm">Tempo</label>
-      <input type="range" id="bpm" min="150" max="300" step="5" value="220">
-      <div class="bpm-readout"><span id="bpmVal">220</span><small> BPM</small></div>
+      <input type="range" id="bpm" min="140" max="300" step="2" value="156">
+      <div class="bpm-readout"><span id="bpmVal">156</span><small> BPM</small></div>
     </div>
     <button class="generate" id="go" type="button">Generate track</button>
   </section>
@@ -227,7 +229,7 @@
   </section>
 
   <footer class="howto">
-    <strong>How to use with Suno:</strong> switch to Custom mode, paste the style prompt into the <strong>Style of Music</strong> field and the lyrics block into the <strong>Lyrics</strong> field. ALL-CAPS lines get shouted, (parentheses) read as background/filtered vocals. If a render comes out messy, retry with the shorter fallback prompt — genre + mood + vocal type is all Suno really needs; don't overexplain the story in the style box. Keep sections short, chorus in caps. A weak industrial track is dark ambience with drums — a strong one is a kick with a world collapsing behind it.
+    <strong>How to use with Suno:</strong> switch to Custom mode, paste the style prompt into the <strong>Style of Music</strong> field and the lyrics block into the <strong>Lyrics</strong> field. ALL-CAPS lines get shouted, (parentheses) read as background/filtered vocals. If a render comes out messy, retry with the shorter fallback prompt — genre + mood + vocal type is all Suno really needs; don't overexplain the story in the style box. For the hard techno / schranz lane, stay at 154–160 BPM and run three generations, not one — take the kick from one, the drop feel from another, the vocal treatment from the third. The formula: kick dominance + industrial restraint + one unforgettable phrase + DJ arrangement discipline.
   </footer>
 </div>
 
@@ -236,6 +238,8 @@
   "use strict";
 
   var SUBGENRES = [
+    {name:"Hard Techno / Schranz", bpm:156, tags:["hard techno","schranz","industrial techno"]},
+    {name:"Spanish Hard Techno", bpm:158, tags:["hard techno","schranz-industrial","dark Spanish hard techno energy"]},
     {name:"Uptempo Hardcore", bpm:220, tags:["industrial hardcore","hard techno","Uptempo Hardcore"]},
     {name:"Early Hardcore / Gabber", bpm:180, tags:["gabber","early hardcore","rave"]},
     {name:"Industrial Hardcore", bpm:160, tags:["industrial hardcore","hard techno","mechanical"]},
@@ -249,6 +253,7 @@
   var KICKS = ["crushing distorted kick with long tail","overdriven 909 kick","punishing kick, layered transient click","bouncing frenchcore kick","relentless double-time kick"];
   var DRUMS = ["metal-clang snare with clap layer","gabber snare fills","reverse cymbal before drops","stomp FX under chorus","metallic percussion"];
   var BASSES = ["reese bass in the drops","distorted sub pulse following the kick","reverse bass","menacing sub, controlled low end"];
+  var RUMBLES = ["mono sub rumble","rolling rumble bass","low-passed kick reverb rumble"];
   var TEXTURES = ["factory ambience","paper shredder rhythms","hydraulic hiss","metal gate slams","fluorescent buzz","chain drag percussion","servo motor grind","courtroom ambience","air-raid sirens","industrial noise"];
   var LEADS = ["alarm synth","one-note rave stab","harsh detuned siren","distorted FM stab","screeching hoovers","acid stabs"];
   var BRIDGE_DESC = ["industrial breakdown, crowd chant","half-time stomp, gang vocals","kick-roll build, crowd chant","noise wall, chant section"];
@@ -532,6 +537,19 @@
   var MOODS = ["dystopian","mechanical","hostile","relentless","menacing","claustrophobic"];
 
   function buildStylePrompts(sub, bpm, vocal, theme, mode){
+    if(mode === "weapon"){
+      var wtags = sub.tags.slice();
+      wtags.push(bpm + " BPM", "club weapon");
+      wtags.push(pick(["crushing distorted kick","overdriven 909 kick","punishing kick with long tail"]),
+        pick(RUMBLES), "metallic percussion", pick(["siren stabs","alarm stab","one-note rave stab"]));
+      wtags.push("raw rave tension", "minimal melody", vocal, "warehouse reverb");
+      wtags.push("brutal drops", "industrial pressure", "DJ-friendly arrangement", "underground and punishing");
+      return {
+        main: wtags.join(", "),
+        alt: "Dark hard techno club weapon, " + bpm + " BPM, distorted kick, rumble bass, metallic hits, " +
+          "spoken male vocal chops, chant hook, brutal drop, warehouse atmosphere"
+      };
+    }
     var tags = sub.tags.slice();
     tags.push(bpm + " BPM energy");
     tags.push(pick(KICKS), pick(DRUMS), pick(TEXTURES));
@@ -647,6 +665,25 @@
     ].join("\n\n");
   }
 
+  function buildWeapon(theme){
+    var couplets = sample(theme.couplets, 2);
+    var tail = pick(theme.tails);
+    var chantLine = theme.chant + " — " + theme.chant + " — " + theme.chant;
+    var whisper = "(" + theme.hook.toLowerCase() + ")";
+    var drop = theme.hook + "\n" + theme.hook + "\n" + theme.hook;
+
+    return [
+      "[Intro - filtered kick ghosts, metallic FX]\n" + whisper,
+      "[Groove 1 - rolling percussion, kick-led, no payoff]\n" + couplets[0][0] + "\n" + couplets[0][1],
+      "[Drop 1 - full kick, rumble bass, shouted hook]\n" + drop + "\n" + tail[0],
+      "[Rebuild - siren layer, filtered vocal cut]\n(" + theme.mantra.toLowerCase() + ")",
+      "[Drop 2 - heavier, distortion throw on last word]\n" + drop + "\n" + tail[1],
+      "[Breakdown - stripped, band-passed spoken vocal]\n" + couplets[1][0] + "\n" + couplets[1][1] + "\n" + whisper,
+      "[Final Peak - shortest and hardest]\n" + chantLine + "\n" + theme.hook + "\n" + chantLine + "\n" + theme.hook,
+      "[Outro - DJ outro, tape-burn exit]\n" + whisper
+    ].join("\n\n");
+  }
+
   var out = document.getElementById("out");
   var styleOut = document.getElementById("styleOut");
   var altStyleOut = document.getElementById("altStyleOut");
@@ -660,17 +697,22 @@
     var bpm = Number(bpmInput.value);
     var mode = modeSel.value;
     var vocal = vocalSel.value === "random"
-      ? pick(["aggressive shouted male vocals","distorted vocal chops","megaphone vocals","pitched-down chants","screamed vocals"])
+      ? (mode === "weapon"
+          ? "aggressive spoken and shouted male vocal chops"
+          : pick(["aggressive shouted male vocals","distorted vocal chops","megaphone vocals","pitched-down chants","screamed vocals"]))
       : vocalSel.value;
 
-    var modeName = mode === "groove" ? "Machine Groove" : mode === "anthem" ? "Full Anthem" : "Club-Ready";
+    var modeName = mode === "weapon" ? "DJ Weapon" : mode === "groove" ? "Machine Groove" : mode === "anthem" ? "Full Anthem" : "Club-Ready";
     trackTitle.textContent = theme.hook;
     trackMeta.textContent = titleCase(theme.name.replace(/\s*\(.*\)$/,"")) + " · " +
       modeName + " · " + sub.name + " · " + bpm + " BPM";
     var prompts = buildStylePrompts(sub, bpm, vocal, theme, mode);
     styleOut.textContent = prompts.main;
     altStyleOut.textContent = prompts.alt;
-    lyricsOut.textContent = mode === "groove" ? buildGroove(theme) : mode === "anthem" ? buildAnthem(theme) : buildTight(theme);
+    lyricsOut.textContent = mode === "weapon" ? buildWeapon(theme)
+      : mode === "groove" ? buildGroove(theme)
+      : mode === "anthem" ? buildAnthem(theme)
+      : buildTight(theme);
 
     out.classList.add("show");
     out.classList.remove("flash");
