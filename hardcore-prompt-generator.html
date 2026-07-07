@@ -170,8 +170,9 @@
     <div class="field">
       <label for="mode">Track mode</label>
       <select id="mode">
-        <option value="anthem">Version A — Full anthem (industrial hardcore)</option>
-        <option value="groove">Version B — Machine groove (hard techno / EBM)</option>
+        <option value="tight">Club-ready — tight (recommended)</option>
+        <option value="anthem">Full anthem — detailed production cues</option>
+        <option value="groove">Machine groove — hard techno / EBM</option>
       </select>
     </div>
     <div class="field">
@@ -211,6 +212,13 @@
     </div>
     <div class="block">
       <div class="block-head">
+        <h2>Fallback style prompt — shorter, if the first comes out messy</h2>
+        <button class="copy" type="button" data-copy="altStyleOut">Copy</button>
+      </div>
+      <pre id="altStyleOut"></pre>
+    </div>
+    <div class="block">
+      <div class="block-head">
         <h2>Lyrics + arrangement — paste into Suno's lyrics field (custom mode)</h2>
         <button class="copy" type="button" data-copy="lyricsOut">Copy</button>
       </div>
@@ -219,7 +227,7 @@
   </section>
 
   <footer class="howto">
-    <strong>How to use with Suno:</strong> switch to Custom mode, paste the style prompt into the <strong>Style of Music</strong> field and the lyrics block into the <strong>Lyrics</strong> field. Section tags carry the arrangement: [Break - kick cuts to silence] is the half-second of gold before each drop, ALL-CAPS lines get shouted, (parentheses) read as background/filtered vocals, and the Final Drop is deliberately the shortest and hardest section. A weak industrial track is dark ambience with drums — a strong one is a kick with a world collapsing behind it.
+    <strong>How to use with Suno:</strong> switch to Custom mode, paste the style prompt into the <strong>Style of Music</strong> field and the lyrics block into the <strong>Lyrics</strong> field. ALL-CAPS lines get shouted, (parentheses) read as background/filtered vocals. If a render comes out messy, retry with the shorter fallback prompt — genre + mood + vocal type is all Suno really needs; don't overexplain the story in the style box. Keep sections short, chorus in caps. A weak industrial track is dark ambience with drums — a strong one is a kick with a world collapsing behind it.
   </footer>
 </div>
 
@@ -521,22 +529,35 @@
   });
   bpmInput.addEventListener("input", function(){ bpmVal.textContent = bpmInput.value; });
 
-  function buildStyleLine(sub, bpm, vocal, theme, mode){
+  var MOODS = ["dystopian","mechanical","hostile","relentless","menacing","claustrophobic"];
+
+  function buildStylePrompts(sub, bpm, vocal, theme, mode){
     var tags = sub.tags.slice();
+    tags.push(bpm + " BPM energy");
+    tags.push(pick(KICKS), pick(DRUMS), pick(TEXTURES));
+    tags.push("dark cinematic intro", vocal, "gang chants", pick(LEADS));
     tags.push(theme.flavor);
-    tags.push(pick(KICKS), pick(DRUMS), pick(BASSES), pick(TEXTURES), pick(LEADS));
-    tags.push(vocal, "gang chants", "whispered radio-voice verses");
     if(mode === "groove"){
-      tags.push("EBM", "hypnotic machine groove", "huge pre-drop tension", "minimal vocals, heavy repetition");
+      tags.push("EBM", "hypnotic machine groove", "heavy repetition", "huge pre-drop tension");
     } else {
-      tags.push("dark cinematic intro", "brutal drops with pre-drop silence", "repetitive hook");
+      tags.push("raw and punishing", "no pop polish", "huge drops", "brutal breakdowns");
     }
-    tags.push(bpm + "bpm", "raw and punishing");
-    return "[" + tags.join(", ") + "]";
+    tags = tags.concat(sample(MOODS, 2));
+    tags.push("underground rave energy");
+    var main = tags.join(", ");
+
+    var alt = "Dark " + sub.tags[0] + " track, " + bpm + " BPM feel, distorted kick, heavy bass, " +
+      "metallic hits, shouted male vocals, gang chant chorus, brutal drop, dystopian mechanical atmosphere";
+    return {main: main, alt: alt};
   }
 
   function chorusBlock(theme, tail){
-    return [theme.hook, theme.hook, tail[0].toUpperCase(), theme.hook, theme.hook, tail[1].toUpperCase()].join("\n");
+    return [theme.hook, theme.hook, tail[0], theme.hook, theme.hook, tail[1]].join("\n");
+  }
+
+  function introLine(theme){
+    var s = theme.outro.toLowerCase();
+    return s.charAt(0).toUpperCase() + s.slice(1);
   }
 
   function buildAnthem(theme){
@@ -568,8 +589,35 @@
         chantLine + "\n" + bridgePair[1] + "\n" +
         chantLine + "\n" + closer[0] + "\n" + closer[1],
       "[Final Drop - shortest and hardest section]\n" +
-        theme.hook + "\n" + theme.hook + "\n" + theme.hook + "\n" + tail[1].toUpperCase(),
+        theme.hook + "\n" + theme.hook + "\n" + theme.hook + "\n" + tail[1],
       "[Outro - " + pick(OUTRO_DESC) + "]\n" + theme.outro
+    ].join("\n\n");
+  }
+
+  function buildTight(theme){
+    var couplets = sample(theme.couplets, 4);
+    var pre = pick(theme.preChorus);
+    var tail = pick(theme.tails);
+    var bridgePair = pick(theme.bridgePairs);
+    var closer = pick(theme.closers);
+    var chantLine = theme.chant + " — " + theme.chant + " — " + theme.chant;
+    var chorus = chorusBlock(theme, tail);
+
+    function verse(lines){ return lines.map(function(c){ return c[0] + "\n" + c[1]; }).join("\n"); }
+
+    return [
+      "[Intro]\n" + introLine(theme),
+      "[Verse]\n" + verse(couplets.slice(0,2)),
+      "[Build]\n" + pre.join("\n"),
+      "[Drop]\n" + chorus,
+      "[Verse]\n" + verse(couplets.slice(2,4)),
+      "[Build]\n" + pre.join("\n"),
+      "[Drop]\n" + chorus,
+      "[Breakdown]\n" +
+        chantLine + "\n" + bridgePair[0] + "\n" +
+        chantLine + "\n" + closer[0] + "\n" + closer[1],
+      "[Final Drop]\n" + chorus,
+      "[Outro]\n" + theme.outro
     ].join("\n\n");
   }
 
@@ -601,6 +649,7 @@
 
   var out = document.getElementById("out");
   var styleOut = document.getElementById("styleOut");
+  var altStyleOut = document.getElementById("altStyleOut");
   var lyricsOut = document.getElementById("lyricsOut");
   var trackTitle = document.getElementById("trackTitle");
   var trackMeta = document.getElementById("trackMeta");
@@ -614,11 +663,14 @@
       ? pick(["aggressive shouted male vocals","distorted vocal chops","megaphone vocals","pitched-down chants","screamed vocals"])
       : vocalSel.value;
 
+    var modeName = mode === "groove" ? "Machine Groove" : mode === "anthem" ? "Full Anthem" : "Club-Ready";
     trackTitle.textContent = theme.hook;
     trackMeta.textContent = titleCase(theme.name.replace(/\s*\(.*\)$/,"")) + " · " +
-      (mode === "groove" ? "Machine Groove" : "Full Anthem") + " · " + sub.name + " · " + bpm + " BPM";
-    styleOut.textContent = buildStyleLine(sub, bpm, vocal, theme, mode);
-    lyricsOut.textContent = mode === "groove" ? buildGroove(theme) : buildAnthem(theme);
+      modeName + " · " + sub.name + " · " + bpm + " BPM";
+    var prompts = buildStylePrompts(sub, bpm, vocal, theme, mode);
+    styleOut.textContent = prompts.main;
+    altStyleOut.textContent = prompts.alt;
+    lyricsOut.textContent = mode === "groove" ? buildGroove(theme) : mode === "anthem" ? buildAnthem(theme) : buildTight(theme);
 
     out.classList.add("show");
     out.classList.remove("flash");
