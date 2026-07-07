@@ -156,9 +156,9 @@
 <div class="noise" aria-hidden="true"></div>
 <div class="wrap">
   <header>
-    <p class="eyebrow">Suno-ready · 150–300 BPM</p>
+    <p class="eyebrow">Suno-ready · Impact design · 150–300 BPM</p>
     <h1>Hardcore <span class="red">Prompt</span> Generator</h1>
-    <p class="sub">Stomping uptempo, gabber, frenchcore and industrial tracks on demand: one style line for the style field, full structured lyrics for the lyrics field. Hit generate, copy, paste, destroy.</p>
+    <p class="sub">Kick first, everything else second. Generates a weapons-grade style prompt plus fully arranged lyrics — pre-drop silence, gang-shout drops, chant bridges, and a final drop that's the shortest and hardest section. Copy, paste into Suno, destroy.</p>
     <div class="hazard" aria-hidden="true"></div>
   </header>
 
@@ -168,15 +168,21 @@
       <select id="theme"></select>
     </div>
     <div class="field">
+      <label for="mode">Track mode</label>
+      <select id="mode">
+        <option value="anthem">Version A — Full anthem (industrial hardcore)</option>
+        <option value="groove">Version B — Machine groove (hard techno / EBM)</option>
+      </select>
+    </div>
+    <div class="field">
       <label for="subgenre">Subgenre</label>
       <select id="subgenre"></select>
     </div>
     <div class="field">
-      <label for="vocals">Vocals</label>
+      <label for="vocals">Main shout</label>
       <select id="vocals">
         <option value="random">Random</option>
-        <option value="">None / instrumental tags only</option>
-        <option value="shouted vocals">Shouted vocals</option>
+        <option value="aggressive shouted male vocals">Aggressive shouted male vocals</option>
         <option value="distorted vocal chops">Distorted vocal chops</option>
         <option value="megaphone vocals">Megaphone vocals</option>
         <option value="pitched-down chants">Pitched-down chants</option>
@@ -198,14 +204,14 @@
     </div>
     <div class="block">
       <div class="block-head">
-        <h2>Style line — paste into Suno's style field</h2>
+        <h2>Style prompt — paste into Suno's style field</h2>
         <button class="copy" type="button" data-copy="styleOut">Copy</button>
       </div>
       <pre id="styleOut"></pre>
     </div>
     <div class="block">
       <div class="block-head">
-        <h2>Lyrics — paste into Suno's lyrics field (custom mode)</h2>
+        <h2>Lyrics + arrangement — paste into Suno's lyrics field (custom mode)</h2>
         <button class="copy" type="button" data-copy="lyricsOut">Copy</button>
       </div>
       <pre id="lyricsOut"></pre>
@@ -213,7 +219,7 @@
   </section>
 
   <footer class="howto">
-    <strong>How to use with Suno:</strong> switch to Custom mode, paste the style line into the <strong>Style of Music</strong> field and the lyrics block into the <strong>Lyrics</strong> field. The section tags ([Verse], [Chorus], [Bridge – industrial breakdown]…) steer the arrangement; ALL-CAPS lines get shouted. Re-generate as many times as it takes — the kick is always right.
+    <strong>How to use with Suno:</strong> switch to Custom mode, paste the style prompt into the <strong>Style of Music</strong> field and the lyrics block into the <strong>Lyrics</strong> field. Section tags carry the arrangement: [Break - kick cuts to silence] is the half-second of gold before each drop, ALL-CAPS lines get shouted, (parentheses) read as background/filtered vocals, and the Final Drop is deliberately the shortest and hardest section. A weak industrial track is dark ambience with drums — a strong one is a kick with a world collapsing behind it.
   </footer>
 </div>
 
@@ -222,57 +228,97 @@
   "use strict";
 
   var SUBGENRES = [
-    {name:"Uptempo Hardcore", bpm:220, tags:["hard techno","industrial","hardcore","Uptempo Hardcore"]},
-    {name:"Early Hardcore / Gabber", bpm:180, tags:["gabber","early hardcore","rave","hoover stabs"]},
-    {name:"Industrial Hardcore", bpm:160, tags:["industrial hardcore","hard techno","dark","mechanical"]},
-    {name:"Frenchcore", bpm:200, tags:["frenchcore","hardcore","bouncing kick","rave"]},
-    {name:"Terrorcore", bpm:240, tags:["terrorcore","extreme hardcore","distortion","dark"]},
-    {name:"Speedcore", bpm:300, tags:["speedcore","extratone","extreme hardcore","noise"]},
-    {name:"Crossbreed", bpm:175, tags:["crossbreed","hardcore drum and bass","industrial","dark"]},
-    {name:"Rawstyle", bpm:155, tags:["rawstyle","hardstyle","screeches","anthemic"]}
+    {name:"Uptempo Hardcore", bpm:220, tags:["industrial hardcore","hard techno","Uptempo Hardcore"]},
+    {name:"Early Hardcore / Gabber", bpm:180, tags:["gabber","early hardcore","rave"]},
+    {name:"Industrial Hardcore", bpm:160, tags:["industrial hardcore","hard techno","mechanical"]},
+    {name:"Frenchcore", bpm:200, tags:["frenchcore","hardcore","rave"]},
+    {name:"Terrorcore", bpm:240, tags:["terrorcore","extreme hardcore","distortion"]},
+    {name:"Speedcore", bpm:300, tags:["speedcore","extratone","extreme hardcore"]},
+    {name:"Crossbreed", bpm:175, tags:["crossbreed","hardcore drum and bass","industrial"]},
+    {name:"Rawstyle", bpm:155, tags:["rawstyle","hardstyle","anthemic"]}
   ];
 
-  var TEXTURES = ["industrial noise","screeching hoovers","metallic percussion","air-raid sirens","acid stabs","reversed bass","factory ambience","pitch-black pads","alarm synths","gated screams"];
-  var KICKS = ["crushing kick","distorted 909 kick","punishing kick","overdriven kick","bouncing kick"];
-  var BRIDGE_DESC = ["industrial breakdown","half-time stomp","kick-roll build","distorted breakdown","noise wall"];
-  var OUTRO_DESC = ["distorted industrial fade","kick decay into noise","sirens fade to silence","tape-stop collapse"];
+  var KICKS = ["crushing distorted kick with long tail","overdriven 909 kick","punishing kick, layered transient click","bouncing frenchcore kick","relentless double-time kick"];
+  var DRUMS = ["metal-clang snare with clap layer","gabber snare fills","reverse cymbal before drops","stomp FX under chorus","metallic percussion"];
+  var BASSES = ["reese bass in the drops","distorted sub pulse following the kick","reverse bass","menacing sub, controlled low end"];
+  var TEXTURES = ["factory ambience","paper shredder rhythms","hydraulic hiss","metal gate slams","fluorescent buzz","chain drag percussion","servo motor grind","courtroom ambience","air-raid sirens","industrial noise"];
+  var LEADS = ["alarm synth","one-note rave stab","harsh detuned siren","distorted FM stab","screeching hoovers","acid stabs"];
+  var BRIDGE_DESC = ["industrial breakdown, crowd chant","half-time stomp, gang vocals","kick-roll build, crowd chant","noise wall, chant section"];
+  var OUTRO_DESC = ["tape-stop, machine shutdown","destroyed fade, kick decay into noise","sirens fade to silence","power-down collapse"];
 
   var THEMES = [
     {
       name:"The Machine (rigged system)",
       hook:"THE MACHINE GRINDS", chant:"GRIND",
+      flavor:"anti-system protest track",
+      mantra:"Bury us in paperwork",
       outro:"THE MACHINE... GRINDS...",
       couplets:[
-        ["The machine grinds, it never sleeps","Buries truth beneath concrete"],
-        ["Paper trail leads nowhere fast","Broken law designed to last"],
+        ["The machine grinds, it never sleeps","Buried truth in steel and concrete"],
+        ["Paper trails that lead nowhere","Broken laws dressed up as fair"],
+        ["No appeal, no voice, no choice","Only the system's endless noise"],
         ["Rubber stamps on empty pleas","Corruption runs with expertise"],
         ["Every order, every seal","Just another rotten deal"],
         ["Decades pass, the cogs keep turning","Cities sleep while justice burns"],
         ["Filed away and marked as read","Signed in ink but left for dead"],
         ["Cameras watch the empty halls","Verdicts written on the walls"],
-        ["Iron doors and marble floors","Justice sleeps behind closed doors"],
-        ["No appeal, no voice, no choice","Drowned beneath the system's noise"]
+        ["Iron doors and marble floors","Justice sleeps behind closed doors"]
       ],
       preChorus:[
         ["Hear the gears turn","Watch the documents burn","Nothing's earned","When the system's rigged"],
         ["Feel the floor shake","Watch the pillars break","Too much at stake","When the system's rigged"]
       ],
       tails:[
-        ["You can't fight what you can't see","Until there's nothing left to be"],
+        ["You can't fight what you can't see","Till there's nothing left of me"],
         ["A million cogs, a single scheme","It eats the future, sells the dream"]
       ],
       bridgePairs:[
-        ["They bury us in paperwork","They make justice sound absurd"],
+        ["Bury us in paperwork","Make the truth sound fucking absurd"],
         ["They feed on every silent mouth","They grind the truth to dust and doubt"]
       ],
       closers:[
-        ["But we're still here","We're still heard"],
-        ["But we won't kneel","We're still real"]
+        ["Still we're here","Still we burn"],
+        ["Still we hit back when it hurts","Still we burn"]
+      ]
+    },
+    {
+      name:"System's Rigged (chant anthem)",
+      hook:"WHEN THE SYSTEM'S RIGGED", chant:"RIGGED",
+      flavor:"chant-led protest anthem, built for live sets",
+      mantra:"Nothing's earned, just watch it burn",
+      outro:"THE SYSTEM'S... RIGGED...",
+      couplets:[
+        ["The dice were loaded from the start","They sold the whole thing off for parts"],
+        ["They wrote the rules, they hold the deck","They cash the fear, we sign the check"],
+        ["Every ladder's missing rungs","Every anthem's already sung"],
+        ["The scales were bent, the game was played","The verdict came out ready-made"],
+        ["Work the grind and stay in line","They still take what's yours and mine"],
+        ["Promises in fine print ink","Built to vanish when you blink"],
+        ["The house wins every hand that's dealt","We only keep the pain we've felt"],
+        ["They fixed the game, they framed the score","They lock the exits, blame the poor"]
+      ],
+      preChorus:[
+        ["Stack the deck","Cash the check","Total wreck","The system's rigged"],
+        ["Place your bet","All you get","Is the debt","The system's rigged"]
+      ],
+      tails:[
+        ["Nothing's earned","Just watch it burn"],
+        ["The game was never yours to win","So tear the whole casino down"]
+      ],
+      bridgePairs:[
+        ["They fixed the game, they framed the score","They lock the exits, blame the poor"],
+        ["They count the chips behind the glass","They never thought the glass would smash"]
+      ],
+      closers:[
+        ["But rigged games end","When tables turn"],
+        ["We flip the board","And watch it burn"]
       ]
     },
     {
       name:"Burn It Down (uprising)",
       hook:"BURN IT DOWN", chant:"BURN",
+      flavor:"riot anthem",
+      mantra:"Everything they built will burn",
       outro:"BURN... IT... DOWN...",
       couplets:[
         ["Torches rising in the square","Smoke and fury fill the air"],
@@ -304,6 +350,8 @@
     {
       name:"The Floor Is War (warehouse rave)",
       hook:"THE FLOOR IS WAR", chant:"STOMP",
+      flavor:"warehouse anthem",
+      mantra:"Surrender to the kick",
       outro:"THE FLOOR... IS WAR...",
       couplets:[
         ["Strobe light cutting through the smoke","Bassline heavy, ceiling broke"],
@@ -335,6 +383,8 @@
     {
       name:"System Overload (digital dystopia)",
       hook:"SYSTEM OVERLOAD", chant:"CRASH",
+      flavor:"dystopian surveillance track",
+      mantra:"Pull the plug, watch it bleed",
       outro:"SYSTEM... OVERLOAD...",
       couplets:[
         ["Every step is logged and sold","Freedom traded, bought for gold"],
@@ -366,6 +416,8 @@
     {
       name:"It Never Stops (inner rage)",
       hook:"IT NEVER STOPS", chant:"RAGE",
+      flavor:"cathartic rage track",
+      mantra:"Let it out or let it win",
       outro:"IT NEVER... STOPS...",
       couplets:[
         ["Something's clawing at my chest","Never lets me sleep or rest"],
@@ -397,6 +449,8 @@
     {
       name:"No Brakes (pure velocity)",
       hook:"NO BRAKES", chant:"FAST",
+      flavor:"high-velocity track",
+      mantra:"Full throttle, no mercy",
       outro:"NO... BRAKES...",
       couplets:[
         ["Redline screaming past the dial","Been flat out for a hundred miles"],
@@ -440,6 +494,7 @@
   }
 
   var themeSel = document.getElementById("theme");
+  var modeSel = document.getElementById("mode");
   var subSel = document.getElementById("subgenre");
   var vocalSel = document.getElementById("vocals");
   var bpmInput = document.getElementById("bpm");
@@ -466,15 +521,25 @@
   });
   bpmInput.addEventListener("input", function(){ bpmVal.textContent = bpmInput.value; });
 
-  function buildStyleLine(sub, bpm, vocal){
+  function buildStyleLine(sub, bpm, vocal, theme, mode){
     var tags = sub.tags.slice();
-    if(vocal){ tags.push(vocal); }
-    var texture = pick(TEXTURES);
-    var kick = pick(KICKS);
-    return "[" + tags.join(", ") + ", " + bpm + "bpm Intro - " + texture + ", " + kick + "]";
+    tags.push(theme.flavor);
+    tags.push(pick(KICKS), pick(DRUMS), pick(BASSES), pick(TEXTURES), pick(LEADS));
+    tags.push(vocal, "gang chants", "whispered radio-voice verses");
+    if(mode === "groove"){
+      tags.push("EBM", "hypnotic machine groove", "huge pre-drop tension", "minimal vocals, heavy repetition");
+    } else {
+      tags.push("dark cinematic intro", "brutal drops with pre-drop silence", "repetitive hook");
+    }
+    tags.push(bpm + "bpm", "raw and punishing");
+    return "[" + tags.join(", ") + "]";
   }
 
-  function buildLyrics(theme){
+  function chorusBlock(theme, tail){
+    return [theme.hook, theme.hook, tail[0].toUpperCase(), theme.hook, theme.hook, tail[1].toUpperCase()].join("\n");
+  }
+
+  function buildAnthem(theme){
     var couplets = sample(theme.couplets, 6);
     var verse1 = couplets.slice(0,3);
     var verse2 = couplets.slice(3,6);
@@ -485,19 +550,51 @@
     var chantLine = theme.chant + " — " + theme.chant + " — " + theme.chant;
 
     function verse(lines){ return lines.map(function(c){ return c[0] + "\n" + c[1]; }).join("\n"); }
-    var chorus = [theme.hook, theme.hook, tail[0], theme.hook, theme.hook, tail[1]].join("\n");
+    var chorus = chorusBlock(theme, tail);
+    var whisper = "(" + theme.hook.toLowerCase() + ")";
 
     return [
-      "[Verse 1]\n" + verse(verse1),
-      "[Pre-Chorus]\n" + pre.join("\n"),
-      "[Chorus]\n" + chorus,
-      "[Verse 2]\n" + verse(verse2),
-      "[Pre-Chorus]\n" + pre.join("\n"),
-      "[Chorus]\n" + chorus,
+      "[Intro - " + pick(TEXTURES) + ", metal hits, filtered vocal whisper]\n" + theme.outro.toLowerCase(),
+      "[Verse 1 - spoken radio voice, stripped kick]\n" + verse(verse1),
+      "[Riser - snare lift, screaming distortion swell]\n" + pre.join("\n"),
+      "[Break - kick cuts to silence]\n" + whisper,
+      "[Drop 1 - full kick wall, gang shout]\n" + chorus,
+      "[Verse 2 - stripped kick, metallic groove]\n" + verse(verse2),
+      "[Pre-Drop - filtered vocals, rising tension]\n" + pre.join("\n"),
+      "[Break - kick cuts to silence]\n" + whisper,
+      "[Drop 2 - harder, reverse bass, extra scream layer]\n" + chorus,
       "[Bridge - " + pick(BRIDGE_DESC) + "]\n" +
         chantLine + "\n" + bridgePair[0] + "\n" +
         chantLine + "\n" + bridgePair[1] + "\n" +
         chantLine + "\n" + closer[0] + "\n" + closer[1],
+      "[Final Drop - shortest and hardest section]\n" +
+        theme.hook + "\n" + theme.hook + "\n" + theme.hook + "\n" + tail[1].toUpperCase(),
+      "[Outro - " + pick(OUTRO_DESC) + "]\n" + theme.outro
+    ].join("\n\n");
+  }
+
+  function buildGroove(theme){
+    var couplets = sample(theme.couplets, 4);
+    var pre = pick(theme.preChorus);
+    var tail = pick(theme.tails);
+    var chorus = chorusBlock(theme, tail);
+    var mantra = theme.mantra;
+    var chantBlock = mantra + "\n" + mantra + "\n" + mantra + "\n" + mantra;
+    var whisper = "(" + mantra.toLowerCase() + ")";
+
+    function verse(lines){ return lines.map(function(c){ return c[0] + "\n" + c[1]; }).join("\n"); }
+
+    return [
+      "[Intro - " + pick(TEXTURES) + ", servo motors, filtered vocal whisper]\n" + whisper,
+      "[Groove - kick and sub pulse, spoken vocals, narrow stereo]\n" + verse(couplets.slice(0,2)),
+      "[Chant - crowd builds, metallic percussion]\n" + chantBlock,
+      "[Break - kick cuts to silence]\n" + whisper,
+      "[Drop 1 - machine groove, gang chant]\n" + chorus,
+      "[Groove 2 - stripped kick, " + pick(TEXTURES) + "]\n" + verse(couplets.slice(2,4)),
+      "[Pre-Drop - " + pick(["huge tension riser","filtered chant, rising pressure"]) + "]\n" + pre.join("\n"),
+      "[Break - kick cuts to silence]\n" + whisper,
+      "[Drop 2 - harder, reverse bass]\n" + chorus,
+      "[Chant - full crowd, stomp FX]\n" + chantBlock,
       "[Outro - " + pick(OUTRO_DESC) + "]\n" + theme.outro
     ].join("\n\n");
   }
@@ -512,14 +609,16 @@
     var theme = themeSel.value === "random" ? pick(THEMES) : THEMES[Number(themeSel.value)];
     var sub = SUBGENRES[Number(subSel.value)];
     var bpm = Number(bpmInput.value);
+    var mode = modeSel.value;
     var vocal = vocalSel.value === "random"
-      ? pick(["shouted vocals","distorted vocal chops","megaphone vocals","pitched-down chants","screamed vocals",""])
+      ? pick(["aggressive shouted male vocals","distorted vocal chops","megaphone vocals","pitched-down chants","screamed vocals"])
       : vocalSel.value;
 
     trackTitle.textContent = theme.hook;
-    trackMeta.textContent = titleCase(theme.name.replace(/\s*\(.*\)$/,"")) + " · " + sub.name + " · " + bpm + " BPM";
-    styleOut.textContent = buildStyleLine(sub, bpm, vocal);
-    lyricsOut.textContent = buildLyrics(theme);
+    trackMeta.textContent = titleCase(theme.name.replace(/\s*\(.*\)$/,"")) + " · " +
+      (mode === "groove" ? "Machine Groove" : "Full Anthem") + " · " + sub.name + " · " + bpm + " BPM";
+    styleOut.textContent = buildStyleLine(sub, bpm, vocal, theme, mode);
+    lyricsOut.textContent = mode === "groove" ? buildGroove(theme) : buildAnthem(theme);
 
     out.classList.add("show");
     out.classList.remove("flash");
